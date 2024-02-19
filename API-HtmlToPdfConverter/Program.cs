@@ -1,12 +1,18 @@
-using API_HtmlToPdfConverter.Controllers;
+using API_HtmlToPdfConverter.Interfaces;
+using API_HtmlToPdfConverter.Services;
+using Azure.Storage.Blobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSignalR();
-//builder.Services.AddHostedService<PdfConversionService>();
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+//builder.Services.AddScoped<IConfiguration>(builder.Configuration);
+builder.Services.AddSingleton<IConfiguration>(new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build());
+
+builder.Services.AddScoped(x => new BlobServiceClient(builder.Configuration.GetConnectionString("AzureStorageAccount")));
+builder.Services.AddScoped<IAzureStorageAccountService, AzureStorageAccountService>();
+builder.Services.AddScoped<IConvertService, ConvertService>();
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options => options.AddPolicy("AllowReactApp",
@@ -25,7 +31,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-app.MapHub<PdfHub>("/pdfHub");
 app.MapControllers();
 
 app.Run();
